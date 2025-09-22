@@ -29,7 +29,7 @@ java {
 }
 
 application {
-    mainClass = 'devices.api.Application'
+    mainClass = 'devices.Application'
 }
 
 tasks.named('test') {

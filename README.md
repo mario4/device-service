@@ -25,7 +25,7 @@
 ---
 
 ## Prerequisites
-- Java 17+ (or your version)  
+- Java 17+  
 - Gradle  
 - Browser to access Swagger 
 
@@ -48,6 +48,15 @@ cd project-name
 
 ./gradlew bootRun
 
+alternatively, download the binaries from the latest release, unzip them and run the application by executing the command below:
+
+```bash
+
+cd <unzipped binary folder>
+
+ ./bin/app
+
+```
 ## Testing
 
 ./gradlew test
