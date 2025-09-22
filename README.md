@@ -49,7 +49,6 @@ cd device-service
 - Java 17+  
 - Gradle  
 - Browser to access Swagger UI
-./gradlew bootRun
 
 ```bash
 ./gradlew bootRun
