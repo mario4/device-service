@@ -79,3 +79,5 @@ If the default port 8080 is already assigned to another service, use another por
 ## Usage 
 
 After running the application, head over to http://localhost:8080/swagger-ui/index.html#/ in the browser.
+
+The swagger-ui is intuitive enough. There all api endpoints are available, including request and response schemas.
