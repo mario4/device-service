@@ -8,5 +8,6 @@ build
 app/.idea/.gitignore
 app/.idea/gradle.xml
 app/.idea/misc.xml
-.DS_Store
 app/bin/
+.DS_Store
+*.class
