@@ -8,11 +8,11 @@
 - [Devices-API](#devices-api)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
-  - [Prerequisites](#prerequisites)
   - [Installation](#installation)
     - [Clone the repository](#clone-the-repository)
   - [Build](#build)
   - [Run the application](#run-the-application)
+    - [Prerequisites](#prerequisites)
   - [Testing](#testing)
   - [Usage](#usage)
 
@@ -24,10 +24,7 @@
 
 ---
 
-## Prerequisites
-- Java 17+ (or your version)  
-- Gradle  
-- Browser to access Swagger 
+
 
 ---
 
@@ -46,11 +43,37 @@ cd project-name
 
 ## Run the application
 
+### Prerequisites
+
+- Java 17+  
+- Gradle  
+- Browser to access Swagger UI
 ./gradlew bootRun
+
+```bash
+./gradlew bootRun
+```
+
+alternatively, download the binaries from the latest release, unzip them and run the application by executing the command below:
+
+```bash
+
+cd <unzipped binary folder>
+
+ ./bin/app --server-port=8081 
+ 
+```
+
+If the default port 8080 is already assigned to another service, use another port like so:
+
+```bash
+ ./bin/app --server-port=8081 
+```
+
 
 ## Testing
 
-./gradlew test
+`./gradlew test`
 
 ## Usage 
 
