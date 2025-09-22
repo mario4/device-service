@@ -14,7 +14,7 @@ import devices.network.NetworkDeployment.CyclicUplinkReferenceException;
 import devices.network.NetworkDeployment.DuplicateDeviceException;
 
 class NetworkDeploymentTest {
-    NetworkDeployment network = new NetworkDeployment();
+    private NetworkDeployment network = new NetworkDeployment();
 
     @Test
     void should_Not_Accept_Duplicate_Devices() {
