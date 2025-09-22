@@ -1,0 +1,13 @@
+# Ignore Gradle project-specific cache directory
+.gradle
+*.class
+
+# Ignore Gradle build output directory
+build
+./vscode
+.vscode/settings.json
+app/.idea/.gitignore
+app/.idea/gradle.xml
+app/.idea/misc.xml
+app/bin/
+.DS_Store
