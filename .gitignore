@@ -9,4 +9,4 @@ app/.idea/.gitignore
 app/.idea/gradle.xml
 app/.idea/misc.xml
 .DS_Store
-app/bin/*
+app/bin
