@@ -32,8 +32,9 @@
 ### Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/project-name.
-cd project-name
+git clone https://github.com/mario4/device-service.git
+
+cd device-service
 
 ```
 
