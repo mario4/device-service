@@ -1,4 +1,4 @@
-package devices.network;
+package devices.common;
 
 import devices.domain.Device;
 import devices.domain.DeviceType;

@@ -1,9 +1,11 @@
-package devices.api;
+package devices.adapter.in.web;
 
 import devices.adapter.in.web.dto.DeviceEntryResponse;
 import devices.adapter.in.web.dto.DevicesNetworkTopologyResponse;
+import devices.adapter.in.web.dto.ErrorResponse;
 import devices.adapter.in.web.dto.RegisterDeviceRequest;
 import devices.domain.DeviceType;
+import devices.domain.exception.DuplicateDeviceException;
 import devices.port.out.DevicesNetworkRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,11 +16,14 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static devices.network.TestDataUtil.givenMacAddress;
+import static devices.common.TestDataUtil.givenMacAddress;
+import static java.util.Objects.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIterable;
 
@@ -42,8 +47,45 @@ public class DevicesNetworkControllerTest {
         devicesNetworkRepository.clear();
     }
 
+    // Registration tests
+
     @Test
-    void canRegisterDevice() {
+    void should_register_new_device_on_empty_topology() {
+        String macAddress = givenMacAddress("01");
+
+        ResponseEntity<DeviceEntryResponse> response = sendRegisterRequest(baseUrl, macAddress, DeviceType.SWITCH, "", DeviceEntryResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getHeaders().getLocation().getPath()).endsWith("/" + macAddress);
+    }
+
+    @Test
+    void should_return_409_when_registering_duplicate_mac() {
+        String macAddress = givenMacAddress("01");
+
+        sendRegisterRequest(baseUrl, macAddress, DeviceType.SWITCH, "");
+
+        ResponseEntity<ErrorResponse> response;
+
+        response = sendRegisterRequest(baseUrl, macAddress, DeviceType.SWITCH, "", ErrorResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().message()).contains(DuplicateDeviceException.ERROR_MESSAGE);
+    }
+
+    @Test
+    void should_validate_device_registration_parameters() {
+        ResponseEntity<ErrorResponse> response;
+
+        response = sendRegisterRequest(baseUrl, "", null, "", ErrorResponse.class);
+        assertThat(response.getStatusCode())
+                .isEqualTo(HttpStatusCode.valueOf(400));
+
+        assertThat(response.getBody().message()).contains(RegisterDeviceRequest.MAC_ADDRESS_REQUIRED).contains(RegisterDeviceRequest.TYPE_REQUIRED);
+    }
+
+    @Test
+    void should_return_registered_device() {
         String macAddress = givenMacAddress("01");
 
         sendRegisterRequest(baseUrl, macAddress, DeviceType.SWITCH, "");
@@ -55,7 +97,17 @@ public class DevicesNetworkControllerTest {
     }
 
     @Test
-    void can_List_Registered_Devices() {
+    void should_return_404_when_device_not_found() {
+        String macAddress = givenMacAddress("01");
+
+        String urlGetDevice = baseUrl + "/" + macAddress;
+        ErrorResponse response = restTemplate.getForObject(urlGetDevice, ErrorResponse.class);
+
+        assertThat(response.status()).isEqualTo(HttpStatus.NOT_FOUND.value());
+    }
+
+    @Test
+    void can_list_registered_devices() {
 
         String[] macAddresses = new String[]{givenMacAddress("01"), givenMacAddress("02"), givenMacAddress("03")};
 
@@ -71,13 +123,7 @@ public class DevicesNetworkControllerTest {
     }
 
     @Test
-    void should_Validate_Device_Registration_Parameters() {
-        assertThat(sendRegisterRequest(baseUrl, null, null, "").getStatusCode())
-                .isEqualTo(HttpStatusCode.valueOf(400));
-    }
-
-    @Test
-    void can_Return_Network_Topology() {
+    void can_return_network_topology() {
         setupBranchingNetworkTopology(baseUrl);
 
         String urlGetDevice = baseUrl + "/topology";
@@ -91,7 +137,7 @@ public class DevicesNetworkControllerTest {
     }
 
     @Test
-    void can_Return_Network_Topology_Starting_From_Internal_Device() {
+    void can_return_network_topology_starting_from_internal_device() {
 
         setupBranchingNetworkTopology(baseUrl);
 
@@ -104,16 +150,22 @@ public class DevicesNetworkControllerTest {
 
     }
 
-    private ResponseEntity<Void> sendRegisterRequest(String url, String macAddr, DeviceType deviceType,
-                                                     String uplinkMacAddr) {
+    private <T> ResponseEntity<T> sendRegisterRequest(
+            String url, String macAddr, DeviceType deviceType, String uplinkMacAddr, Class<T> responseType) {
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         RegisterDeviceRequest deviceRequest = new RegisterDeviceRequest(macAddr, deviceType, uplinkMacAddr);
-
         HttpEntity<RegisterDeviceRequest> httpEntity = new HttpEntity<>(deviceRequest, headers);
 
-        return restTemplate.exchange(url, HttpMethod.POST, httpEntity, Void.class);
+        return restTemplate.exchange(url, HttpMethod.POST, httpEntity, responseType);
+    }
+
+    private void sendRegisterRequest(
+            String url, String macAddr, DeviceType deviceType, String uplinkMacAddr) {
+
+        sendRegisterRequest(url, macAddr, deviceType, uplinkMacAddr, Void.class);
     }
 
     private void setupBranchingNetworkTopology(String url) {
