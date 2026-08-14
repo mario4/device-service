@@ -1,10 +1,11 @@
-package devices.api;
+package devices.adapter.in.web;
 
 import devices.adapter.in.web.dto.DeviceEntryResponse;
 import devices.adapter.in.web.dto.DevicesNetworkTopologyResponse;
 import devices.adapter.in.web.dto.ErrorResponse;
 import devices.adapter.in.web.dto.RegisterDeviceRequest;
 import devices.domain.DeviceType;
+import devices.domain.exception.DuplicateDeviceException;
 import devices.port.out.DevicesNetworkRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,11 +16,14 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static devices.common.TestDataUtil.givenMacAddress;
+import static java.util.Objects.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIterable;
 
@@ -46,19 +50,31 @@ public class DevicesNetworkControllerTest {
     // Registration tests
 
     @Test
-    void shouldRegisterNewDevice() {
+    void should_register_new_device_on_empty_topology() {
+        String macAddress = givenMacAddress("01");
+
+        ResponseEntity<DeviceEntryResponse> response = sendRegisterRequest(baseUrl, macAddress, DeviceType.SWITCH, "", DeviceEntryResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getHeaders().getLocation().getPath()).endsWith("/" + macAddress);
+    }
+
+    @Test
+    void should_return_409_when_registering_duplicate_mac() {
         String macAddress = givenMacAddress("01");
 
         sendRegisterRequest(baseUrl, macAddress, DeviceType.SWITCH, "");
 
-        String urlGetDevice = baseUrl + "/" + macAddress;
-        DeviceEntryResponse response = restTemplate.getForObject(urlGetDevice, DeviceEntryResponse.class);
+        ResponseEntity<ErrorResponse> response;
 
-        assertThat(response.macAddress()).isEqualTo(macAddress);
+        response = sendRegisterRequest(baseUrl, macAddress, DeviceType.SWITCH, "", ErrorResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().message()).contains(DuplicateDeviceException.ERROR_MESSAGE);
     }
 
     @Test
-    void should_Validate_Device_Registration_Parameters() {
+    void should_validate_device_registration_parameters() {
         ResponseEntity<ErrorResponse> response;
 
         response = sendRegisterRequest(baseUrl, "", null, "", ErrorResponse.class);
@@ -69,7 +85,7 @@ public class DevicesNetworkControllerTest {
     }
 
     @Test
-    void shouldReturnRegisteredDevice() {
+    void should_return_registered_device() {
         String macAddress = givenMacAddress("01");
 
         sendRegisterRequest(baseUrl, macAddress, DeviceType.SWITCH, "");
@@ -81,7 +97,17 @@ public class DevicesNetworkControllerTest {
     }
 
     @Test
-    void can_List_Registered_Devices() {
+    void should_return_404_when_device_not_found() {
+        String macAddress = givenMacAddress("01");
+
+        String urlGetDevice = baseUrl + "/" + macAddress;
+        ErrorResponse response = restTemplate.getForObject(urlGetDevice, ErrorResponse.class);
+
+        assertThat(response.status()).isEqualTo(HttpStatus.NOT_FOUND.value());
+    }
+
+    @Test
+    void can_list_registered_devices() {
 
         String[] macAddresses = new String[]{givenMacAddress("01"), givenMacAddress("02"), givenMacAddress("03")};
 
@@ -97,7 +123,7 @@ public class DevicesNetworkControllerTest {
     }
 
     @Test
-    void can_Return_Network_Topology() {
+    void can_return_network_topology() {
         setupBranchingNetworkTopology(baseUrl);
 
         String urlGetDevice = baseUrl + "/topology";
@@ -111,7 +137,7 @@ public class DevicesNetworkControllerTest {
     }
 
     @Test
-    void can_Return_Network_Topology_Starting_From_Internal_Device() {
+    void can_return_network_topology_starting_from_internal_device() {
 
         setupBranchingNetworkTopology(baseUrl);
 

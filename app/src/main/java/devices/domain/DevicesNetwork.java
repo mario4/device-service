@@ -1,5 +1,8 @@
 package devices.domain;
 
+import devices.domain.exception.CyclicUplinkReferenceException;
+import devices.domain.exception.DuplicateDeviceException;
+
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Optional;
@@ -16,11 +19,11 @@ public class DevicesNetwork {
         Device device = getRegisteredDevice(newDevice.getMacAddress().value());
 
         if (device != null) {
-            throw new DevicesNetwork.DuplicateDeviceException();
+            throw new DuplicateDeviceException();
         }
 
         if (newDevice.getMacAddress().equals(newDevice.getUplinkMacAddress().orElse(null)))
-            throw new DevicesNetwork.CyclicUplinkReferenceException();
+            throw new CyclicUplinkReferenceException();
 
         deployDeviceToNetwork(newDevice);
     }
@@ -49,7 +52,7 @@ public class DevicesNetwork {
                 networkRoot.getConnectedDevices().add(device);
             } else {
                 if (createsCyclicReference(device, uplinkDevice)) {
-                    throw new DevicesNetwork.CyclicUplinkReferenceException();
+                    throw new CyclicUplinkReferenceException();
                 }
                 uplinkDevice.getConnectedDevices().add(device);
             }
@@ -81,19 +84,5 @@ public class DevicesNetwork {
 
     private boolean isNoLongerHangingDevice(String device, Optional<MacAddress> uplinkMacAddress) {
         return uplinkMacAddress.filter(addr -> addr.value().equals(device)).isPresent();
-    }
-
-    public static final class CyclicUplinkReferenceException extends RuntimeException {
-        @Override
-        public String getMessage() {
-            return "Cyclic device connection is not accepted in network topology";
-        }
-    }
-
-    public static final class DuplicateDeviceException extends RuntimeException {
-        @Override
-        public String getMessage() {
-            return "A device with the same macAddress is already deployed to network";
-        }
     }
 }
